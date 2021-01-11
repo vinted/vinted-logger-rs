@@ -1,0 +1,33 @@
+[package]
+name = "vinted-logger"
+version = "0.1.0"
+authors = ["Evaldas Buinauskas <evaldas.buinauskas@vinted.com>"]
+edition = "2018"
+description = "Vinted logger for Rust applications"
+readme = "README.md"
+license = "MIT"
+documentation = "https://github.com/vinted/vinted-logger-rs"
+homepage = "https://github.com/vinted/vinted-logger-rs"
+repository = "https://github.com/vinted/vinted-logger-rs"
+
+[dependencies]
+log = "0.4"
+poston = "0.7.1"
+anyhow = "1.0"
+gethostname = "0.2"
+serde = "1"
+serde_json = "1"
+serde_derive = "1"
+
+[dependencies.log4rs]
+version = "1.0.0-alpha-2"
+default-features = false
+features = ["config_parsing", "json_encoder", "yaml_format", "console_appender"]
+
+[dependencies.chrono]
+version = "0.4"
+features = ["serde"]
+
+[dependencies.serde_with]
+version = "1.6.0"
+features = ["macros"]
