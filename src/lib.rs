@@ -39,28 +39,27 @@
     unused_mut
 )]
 
-#[macro_use]
-extern crate serde_with;
-
 use chrono::{DateTime, Utc};
 use log::{LevelFilter, Record};
 use log4rs;
 use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Logger, Root};
-use log4rs::encode::json::JsonEncoder;
 use log4rs::Config;
-use poston::client::{Client, Settings, WorkerPool};
-use std::fmt::Debug;
 use std::net::ToSocketAddrs;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Mutex;
+use std::{fmt::Debug, net::UdpSocket};
+use serde::{Serialize, Deserialize};
 
-#[skip_serializing_none]
 #[derive(Serialize)]
 struct LogRecord {
+    environment: String,
     facility: String,
     host: String,
+    target: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     module: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     file: Option<String>,
     level: String,
     message: String,
@@ -70,16 +69,20 @@ struct LogRecord {
 
 impl LogRecord {
     fn new(
+        environment: &str,
         facility: &str,
         host: &str,
+        target: &str,
         module: Option<&str>,
         file: Option<&str>,
         level: &str,
         message: &str,
     ) -> Self {
         LogRecord {
+            environment: environment.into(),
             facility: facility.into(),
             host: host.into(),
+            target: target.into(),
             module: module.map(Into::into),
             file: file.map(Into::into),
             level: level.into(),
@@ -91,17 +94,17 @@ impl LogRecord {
 
 #[derive(Debug)]
 struct FluentdAppender {
-    encoder: Box<dyn log4rs::encode::Encode>,
     sender: Mutex<Sender<LogRecord>>,
     facility: String,
     host: String,
+    environment: String,
 }
 
 impl FluentdAppender {
     fn builder() -> FluentdAppenderBuilder {
         FluentdAppenderBuilder {
-            encoder: None,
             facility: "".into(),
+            environment: "".into(),
         }
     }
 }
@@ -109,8 +112,10 @@ impl FluentdAppender {
 impl ::log4rs::append::Append for FluentdAppender {
     fn append(&self, record: &Record) -> Result<(), anyhow::Error> {
         let log_record = LogRecord::new(
-            record.target(),
+            &self.environment,
+            &self.facility,
             &self.host,
+            record.target(),
             record.module_path(),
             record.file(),
             &format!("{}", record.level()),
@@ -129,20 +134,20 @@ impl ::log4rs::append::Append for FluentdAppender {
 
 /// `FluentdAppender` builder.
 struct FluentdAppenderBuilder {
-    encoder: Option<Box<dyn log4rs::encode::Encode>>,
     facility: String,
+    environment: String,
 }
 
 impl FluentdAppenderBuilder {
-    /// Set custom encoder.
-    fn encoder(mut self, encoder: Box<dyn log4rs::encode::Encode>) -> Self {
-        self.encoder = Some(encoder);
+    /// Sets facility
+    fn facility(mut self, facility: &str) -> Self {
+        self.facility = facility.into();
         self
     }
 
-    /// Sets facility name
-    fn facility(mut self, facility: &str) -> Self {
-        self.facility = facility.into();
+    /// Sets environment
+    fn environment(mut self, environment: &str) -> Self {
+        self.environment = environment.into();
         self
     }
 
@@ -155,47 +160,38 @@ impl FluentdAppenderBuilder {
     {
         let (sender, receiver): (Sender<LogRecord>, Receiver<LogRecord>) =
             ::std::sync::mpsc::channel();
-        let facility_clone = self.facility.clone();
-        let facility_clone2 = self.facility.clone();
 
         //Thread receiving all log_record and sending them to fluentd
         let _ = ::std::thread::spawn(move || {
-            let settings = Settings {
-                connection_retry_timeout: ::std::time::Duration::from_secs(5),
-                ..Default::default()
-            };
-
-            match WorkerPool::with_settings(&addr, &settings) {
-                Ok(pool) => loop {
+            match UdpSocket::bind("127.0.0.1:0") {
+                Ok(socket) => loop {
                     match receiver.recv() {
-                        Ok(log_record) => {
-                            if let Err(e) = pool.send(
-                                facility_clone.clone(),
-                                &log_record,
-                                log_record.timestamp.into(),
-                            ) {
-                                eprintln!("Log record can't be sent to fluentd: {}", e);
+                        Ok(log_record) => match serde_json::to_string(&log_record) {
+                            Ok(record) => {
+                                if let Err(e) = socket.send_to(record.as_bytes(), &addr) {
+                                    eprintln!("Log record can't be sent to fluentd: {}", e);
+                                }
                             }
-                        }
+                            Err(e) => {
+                                eprintln!("Couldn't serialize log record: {}", e);
+                            }
+                        },
                         Err(e) => {
                             eprintln!("Can't receive new log record: {}", e);
                             break;
                         }
                     }
                 },
-
                 Err(e) => {
-                    eprintln!("Fluentd worker pool can't be created: {}", e);
+                    eprintln!("Couldn't bind to UDP socket: {}", e);
                 }
             };
         });
 
         FluentdAppender {
-            encoder: self
-                .encoder
-                .unwrap_or_else(|| Box::new(log4rs::encode::pattern::PatternEncoder::default())),
             sender: Mutex::new(sender),
-            facility: facility_clone2,
+            facility: self.facility,
+            environment: self.environment,
             host: gethostname::gethostname()
                 .into_string()
                 .map(|x| x)
@@ -208,7 +204,7 @@ impl FluentdAppenderBuilder {
 struct FluentdAppenderConfig {
     addr: String,
     facility: String,
-    encoder: Option<log4rs::encode::EncoderConfig>,
+    environment: String,
 }
 
 struct FluentdAppenderDeserializer;
@@ -220,23 +216,20 @@ impl log4rs::config::Deserialize for FluentdAppenderDeserializer {
     fn deserialize(
         &self,
         config: Self::Config,
-        deserializers: &log4rs::config::Deserializers,
+        _deserializers: &log4rs::config::Deserializers,
     ) -> anyhow::Result<Box<Self::Trait>> {
-        let mut builder = FluentdAppender::builder();
+        let appender = FluentdAppender::builder()
+            .facility(&config.facility)
+            .environment(&config.environment)
+            .build(config.addr);
 
-        if let Some(encoder) = config.encoder {
-            builder = builder.encoder(deserializers.deserialize(&encoder.kind, encoder.config)?);
-        }
-
-        builder = builder.facility(&config.facility);
-
-        Ok(Box::new(builder.build(config.addr)))
+        Ok(Box::new(appender))
     }
 }
 
 /// Creates a Vinted Rust logger
 ///
-/// When environment is production - it'll create fluentd logger,
+/// When environment is production - it'll create fluentd UDP logger,
 /// otherwise it'll create console logger
 ///
 /// Usage:
@@ -244,7 +237,7 @@ impl log4rs::config::Deserialize for FluentdAppenderDeserializer {
 /// # #[macro_use]
 /// # extern crate log;
 /// # fn main() {
-/// let _ = vinted_logger::from_config("production", "mclogger");
+/// let _ = vinted_logger::from_config("production", "mc-logger");
 /// info!("Log some stuff");
 /// # }
 /// ```
@@ -253,11 +246,12 @@ pub fn from_config(
     facility: impl AsRef<str>,
 ) -> Result<log4rs::Handle, Box<dyn std::error::Error + Send + Sync>> {
     let facility = facility.as_ref();
+    let environment = environment.as_ref();
 
-    let config = if environment.as_ref() == "production" {
+    let config = if environment == "production" {
         let fluentd = FluentdAppender::builder()
             .facility(facility)
-            .encoder(Box::new(JsonEncoder::new()))
+            .environment(environment.into())
             .build("127.0.0.1:9091");
 
         Config::builder()
@@ -288,16 +282,15 @@ pub fn from_config(
 ///     kind: console
 ///   fluentd:
 ///     kind: fluentd
-///     facility: mclogger
+///     environment: production
+///     facility: svc-logger
 ///     addr: 127.0.0.1:9091
-///     encoder:
-///       kind: json
 /// root:
 ///   level: info
 ///   appenders:
 ///     - fluentd
 /// loggers:
-///   mclogger:
+///   svc-logger:
 ///     level: info
 /// ```
 ///
