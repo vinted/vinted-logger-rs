@@ -45,11 +45,11 @@ use log4rs;
 use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Logger, Root};
 use log4rs::Config;
+use serde::{Deserialize, Serialize};
 use std::net::ToSocketAddrs;
 use std::sync::mpsc::{Receiver, Sender};
 use std::sync::Mutex;
 use std::{fmt::Debug, net::UdpSocket};
-use serde::{Serialize, Deserialize};
 
 #[derive(Serialize)]
 struct LogRecord {
@@ -263,8 +263,12 @@ pub fn from_config(
 
         Config::builder()
             .appender(Appender::builder().build("console", Box::new(console)))
-            .logger(Logger::builder().build(facility, LevelFilter::Info))
-            .build(Root::builder().appender("console").build(LevelFilter::Info))
+            .logger(Logger::builder().build(facility, LevelFilter::Trace))
+            .build(
+                Root::builder()
+                    .appender("console")
+                    .build(LevelFilter::Trace),
+            )
     }?;
 
     let handle = log4rs::init_config(config)?;
