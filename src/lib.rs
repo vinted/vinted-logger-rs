@@ -41,7 +41,6 @@
 
 use chrono::{DateTime, Utc};
 use log::{LevelFilter, Record};
-use log4rs;
 use log4rs::append::console::ConsoleAppender;
 use log4rs::config::{Appender, Logger, Root};
 use log4rs::Config;
@@ -68,6 +67,7 @@ struct LogRecord {
 }
 
 impl LogRecord {
+    #[allow(clippy::too_many_arguments)]
     fn new(
         environment: &str,
         facility: &str,
@@ -194,8 +194,7 @@ impl FluentdAppenderBuilder {
             environment: self.environment,
             host: gethostname::gethostname()
                 .into_string()
-                .map(|x| x)
-                .unwrap_or("unknown".into()),
+                .unwrap_or_else(|_| "unknown".into()),
         }
     }
 }
@@ -251,7 +250,7 @@ pub fn from_config(
     let config = if environment == "production" {
         let fluentd = FluentdAppender::builder()
             .facility(facility)
-            .environment(environment.into())
+            .environment(environment)
             .build("127.0.0.1:9091");
 
         Config::builder()
