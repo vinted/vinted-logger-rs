@@ -15,6 +15,16 @@ log = "0.4"
 anyhow = "1.0"
 gethostname = "0.2"
 serde_json = "1"
+tracing = "*"
+tracing-subscriber = "*"
+bytes = "1"
+hostname = "0.3"
+futures-channel = "0.3"
+futures-util = { version = "0.3", features = ["sink"] }
+tokio = { version = "1", features = ["io-util", "net", "time"] }
+tokio-util = { version = "0.6", features = ["codec", "net"] }
+tracing-core = "0.1"
+
 
 [dependencies.serde]
 version = "1"
@@ -28,3 +38,6 @@ features = ["config_parsing", "json_encoder", "yaml_format", "console_appender"]
 [dependencies.chrono]
 version = "0.4"
 features = ["serde"]
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt", "rt-multi-thread"] }
