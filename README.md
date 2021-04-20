@@ -4,16 +4,23 @@ Structured logger for Vinted Rust applications. Acts as simple logger in dev/tes
 
 ## Using in applications
 
+### Libraries
 Add a crate to your `Cargo.toml`
 
+```toml
+tracing = "0.1"
+```
+
+### Binaries
 ```toml
 vinted-logger = { git = "https://github.com/vinted/vinted-logger-rs" }
 ```
 
+
 In your `main` function, add the following code:
 
 ```rust
-let _ = vinted_logger::from_config("production", "svc_search");
+let _ = vinted_logger::try_init("console", vinted_logger::Target::Udp);
 ```
 
 ## Usage
