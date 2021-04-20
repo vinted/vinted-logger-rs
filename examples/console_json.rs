@@ -1,9 +1,8 @@
 use std::{error::Error, io};
 use tracing::{debug, error, info, span, warn, Level};
 
-#[tokio::main]
-async fn main() {
-    let _ = vinted_logger::try_init("kurbernetes", vinted_logger::Target::Kubernetes);
+fn main() {
+    let _ = vinted_logger::try_init("kubernetes", vinted_logger::Target::Kubernetes);
 
     let number_of_yaks = 3;
     // this creates a new event, outside of any spans.
@@ -34,6 +33,7 @@ pub fn shave(yak: usize) -> Result<(), Box<dyn Error + 'static>> {
     }
     Ok(())
 }
+
 pub fn shave_all(yaks: usize) -> usize {
     // Constructs a new span named "shaving_yaks" at the TRACE level,
     // and a field whose key is "yaks". This is equivalent to writing:

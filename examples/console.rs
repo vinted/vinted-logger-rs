@@ -1,8 +1,7 @@
 use std::{error::Error, io};
 use tracing::{debug, error, info, span, warn, Level};
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let _ = vinted_logger::try_init("console", vinted_logger::Target::Console);
 
     let number_of_yaks = 3;
@@ -34,6 +33,7 @@ pub fn shave(yak: usize) -> Result<(), Box<dyn Error + 'static>> {
     }
     Ok(())
 }
+
 pub fn shave_all(yaks: usize) -> usize {
     // Constructs a new span named "shaving_yaks" at the TRACE level,
     // and a field whose key is "yaks". This is equivalent to writing:
