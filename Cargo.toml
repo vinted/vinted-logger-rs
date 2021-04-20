@@ -1,7 +1,10 @@
 [package]
 name = "vinted-logger"
-version = "0.2.0"
-authors = ["Evaldas Buinauskas <evaldas.buinauskas@vinted.com>"]
+version = "0.3.0"
+authors = [
+    "Evaldas Buinauskas <evaldas.buinauskas@vinted.com>",
+    "Martynas Jakimcikas <martynas.jakimcikas@vinted.com>",
+]
 edition = "2018"
 description = "Vinted fluentd UDP logger for Rust applications"
 readme = "README.md"
@@ -11,20 +14,18 @@ homepage = "https://github.com/vinted/vinted-logger-rs"
 repository = "https://github.com/vinted/vinted-logger-rs"
 
 [dependencies]
-log = "0.4"
-anyhow = "1.0"
+bytes = "1"
+futures-channel = "0.3"
+futures-util = { version = "0.3", features = ["sink"] }
 gethostname = "0.2"
 serde_json = "1"
+serde = "1"
+tokio = { version = "1", features = ["rt"] }
+tokio-util = { version = "0.6", features = ["codec", "net"] }
+tracing-subscriber = "0.2"
+tracing-core = "0.1"
+tracing-serde = "0.1"
 
-[dependencies.serde]
-version = "1"
-features = ["derive"]
-
-[dependencies.log4rs]
-version = "1.0.0"
-default-features = false
-features = ["config_parsing", "json_encoder", "yaml_format", "console_appender"]
-
-[dependencies.chrono]
-version = "0.4"
-features = ["serde"]
+[dev-dependencies]
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
