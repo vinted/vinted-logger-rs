@@ -1,6 +1,6 @@
 [package]
 name = "vinted-logger"
-version = "0.2.0"
+version = "0.3.0"
 authors = [
     "Evaldas Buinauskas <evaldas.buinauskas@vinted.com>",
     "Martynas Jakimcikas <martynas.jakimcikas@vinted.com>",
