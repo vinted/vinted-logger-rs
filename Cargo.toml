@@ -20,7 +20,7 @@ futures-util = { version = "0.3", features = ["sink"] }
 gethostname = "0.2"
 serde_json = "1"
 serde = "1"
-tokio = { version = "1", features = ["rt"] }
+tokio = { version = "1", features = ["full"] }
 tokio-util = { version = "0.6", features = ["codec", "net"] }
 tracing-subscriber = "0.2"
 tracing-core = "0.1"
