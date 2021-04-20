@@ -1,7 +1,10 @@
 [package]
 name = "vinted-logger"
 version = "0.2.0"
-authors = ["Evaldas Buinauskas <evaldas.buinauskas@vinted.com>"]
+authors = [
+    "Evaldas Buinauskas <evaldas.buinauskas@vinted.com>",
+    "Martynas Jakimcikas <martynas.jakimcikas@vinted.com>",
+]
 edition = "2018"
 description = "Vinted fluentd UDP logger for Rust applications"
 readme = "README.md"
