@@ -73,7 +73,7 @@ where
 async fn handle_udp_connection(addr: SocketAddr, receiver: &mut Receiver<Bytes>) {
     // Bind address version must match address version
     let bind_addr = if addr.is_ipv4() {
-        "0.0.0.0:0"
+        "127.0.0.1:0"
     } else {
         "[::]:0"
     };
