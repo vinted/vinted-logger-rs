@@ -1,29 +1,48 @@
 # Vinted Rust logger
 
-Structured logger for Vinted Rust applications. Acts as simple logger in dev/test environments. In production environment forwards all messages to the local [Fluent Bit](https://fluentbit.io) forwarder (usually localhost:9091).
+Structured logger for Vinted Rust applications. Can log in the following ways:
+
+- Sends logs formatted as JSON messages to a UDP socket. Intended for current production uses.
+- Sends logs formatted as JSON messages to a stdout. Intended for containers running in Kubernetes.
+- Sends plain logs to stdout. Intended for local development.
 
 ## Using in applications
 
-### Libraries
-Add a crate to your `Cargo.toml`
+This crate depends on [`tracing`](https://docs.rs/tracing/0.1.25/tracing/) crate, import it to your crate. In `Cargo.toml`:
 
 ```toml
 tracing = "0.1"
 ```
 
-### Binaries
+And then add this crate to your executable crate:
+
 ```toml
 vinted-logger = { git = "https://github.com/vinted/vinted-logger-rs" }
 ```
 
+Logger is initialized from your `main` method.
 
-In your `main` function, add the following code:
+To add console logger:
+
+```rust
+let _ = vinted_logger::try_init("console", vinted_logger::Target::Console);
+```
+
+To add UDP logger:
 
 ```rust
 let _ = vinted_logger::try_init("console", vinted_logger::Target::Udp);
 ```
 
-## Usage
+To add Kubernetes logger:
+
+```rust
+let _ = vinted_logger::try_init("console", vinted_logger::Target::Kubernetes);
+```
+
+## Usage examples
+
+Simple logging:
 
 ```rust
 info!("Some message");
@@ -34,18 +53,31 @@ warn!("Some message");
 log!("Some message");
 ```
 
+Structured logging:
+
+```rust
+info!(foo="bar", "Some message");
+trace!(foo="bar", "Some message");
+error!(foo="bar", "Some message");
+debug!(foo="bar", "Some message");
+warn!(foo="bar", "Some message");
+log!(foo="bar", "Some message");
+```
+
 Messages are produced in the following JSON format:
 
 ```json
 {
-  "facility": "svc_search",
-  "host": "vinted",
-  "module": "svc_search",
-  "file": "src/bin/svc-search.rs",
+  "@timestamp": "2021-04-20T12:42:57.353066+00:00",
   "level": "INFO",
-  "message": "Some message",
-  "@timestamp": "2021-01-11T13:24:50.361397622Z"
+  "facility": "console",
+  "message": "Binding to http://0.0.0.0:9550",
+  "target": "svc_search",
+  "thread_id": "ThreadId(1)",
+  "thread_name": "main",
+  "file": "bin/src/main.rs",
+  "module": "svc_search",
+  "line": 73,
+  "host": "localhost"
 }
 ```
-
-In production environment it will be passed as is to the Fluent Bit logger and eventually will end up in elasticsearch cluster (and Kibana). In development environment it will result in text being logged to console.
