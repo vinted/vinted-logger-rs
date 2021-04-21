@@ -28,16 +28,16 @@ To add console logger:
 let _ = vinted_logger::try_init("console", vinted_logger::Target::Console);
 ```
 
-To add UDP logger:
+To add console JSON logger:
 
 ```rust
-let _ = vinted_logger::try_init("console", vinted_logger::Target::Udp);
+let _ = vinted_logger::try_init("console", vinted_logger::Target::ConsoleJson);
 ```
 
-To add Kubernetes logger:
+To add UDP JSON logger:
 
 ```rust
-let _ = vinted_logger::try_init("console", vinted_logger::Target::Kubernetes);
+let _ = vinted_logger::try_init("console", vinted_logger::Target::UdpJson);
 ```
 
 ## Usage examples
