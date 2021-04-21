@@ -7,9 +7,11 @@ pub(crate) mod vinted_udp_writer;
 #[derive(Debug)]
 pub enum Target {
     /// Messages will be logged as JSON and sent to a UDP socket
-    Udp,
+    UdpJson,
+
     /// Messages will be logged as JSON to stdout
-    Kubernetes,
+    ConsoleJson,
+
     /// Messages will be logged to stdout
     Console,
 }
@@ -22,12 +24,12 @@ pub fn try_init(
     target: Target,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     match target {
-        Target::Udp => tracing_subscriber::fmt()
+        Target::UdpJson => tracing_subscriber::fmt()
             .with_writer(vinted_udp_writer::VintedUdpWriter::new("127.0.0.1:9091"))
             .fmt_fields(tracing_subscriber::fmt::format::JsonFields::new())
             .event_format(vinted_json_formatter::VintedJson::new(facility))
             .try_init(),
-        Target::Kubernetes => tracing_subscriber::fmt()
+        Target::ConsoleJson => tracing_subscriber::fmt()
             .fmt_fields(tracing_subscriber::fmt::format::JsonFields::new())
             .event_format(vinted_json_formatter::VintedJson::new(facility))
             .try_init(),

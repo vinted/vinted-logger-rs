@@ -2,7 +2,7 @@ use std::{error::Error, io};
 use tracing::{debug, error, info, span, warn, Level};
 
 fn main() {
-    let _ = vinted_logger::try_init("kubernetes", vinted_logger::Target::ConsoleJson);
+    let _ = vinted_logger::try_init("udp", vinted_logger::Target::UdpJson);
 
     let number_of_yaks = 3;
     // this creates a new event, outside of any spans.
