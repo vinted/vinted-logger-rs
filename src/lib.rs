@@ -1,4 +1,5 @@
 use std::error::Error;
+use tracing_subscriber::EnvFilter;
 
 pub(crate) mod vinted_json_formatter;
 pub(crate) mod vinted_udp_writer;
@@ -25,14 +26,18 @@ pub fn try_init(
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
     match target {
         Target::UdpJson => tracing_subscriber::fmt()
+            .with_env_filter(EnvFilter::from_default_env())
             .with_writer(vinted_udp_writer::VintedUdpWriter::new("127.0.0.1:9091"))
             .fmt_fields(tracing_subscriber::fmt::format::JsonFields::new())
             .event_format(vinted_json_formatter::VintedJson::new(facility))
             .try_init(),
         Target::ConsoleJson => tracing_subscriber::fmt()
+            .with_env_filter(EnvFilter::from_default_env())
             .fmt_fields(tracing_subscriber::fmt::format::JsonFields::new())
             .event_format(vinted_json_formatter::VintedJson::new(facility))
             .try_init(),
-        Target::Console => tracing_subscriber::fmt().try_init(),
+        Target::Console => tracing_subscriber::fmt()
+            .with_env_filter(EnvFilter::from_default_env())
+            .try_init(),
     }
 }
