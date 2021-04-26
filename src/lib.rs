@@ -24,20 +24,22 @@ pub fn try_init(
     facility: &'static str,
     target: Target,
 ) -> Result<(), Box<dyn Error + Send + Sync + 'static>> {
+    let filter_layer = EnvFilter::try_from_default_env().or_else(|_| EnvFilter::try_new("info"))?;
+
     match target {
         Target::UdpJson => tracing_subscriber::fmt()
-            .with_env_filter(EnvFilter::from_default_env())
+            .with_env_filter(filter_layer)
             .with_writer(vinted_udp_writer::VintedUdpWriter::new("127.0.0.1:9091"))
             .fmt_fields(tracing_subscriber::fmt::format::JsonFields::new())
             .event_format(vinted_json_formatter::VintedJson::new(facility))
             .try_init(),
         Target::ConsoleJson => tracing_subscriber::fmt()
-            .with_env_filter(EnvFilter::from_default_env())
+            .with_env_filter(filter_layer)
             .fmt_fields(tracing_subscriber::fmt::format::JsonFields::new())
             .event_format(vinted_json_formatter::VintedJson::new(facility))
             .try_init(),
         Target::Console => tracing_subscriber::fmt()
-            .with_env_filter(EnvFilter::from_default_env())
+            .with_env_filter(filter_layer)
             .try_init(),
     }
 }
