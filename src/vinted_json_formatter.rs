@@ -54,8 +54,6 @@ where
             serializer.serialize_entry("target", meta.target())?;
             if let Some(ref span) = current_span {
                 serializer
-                    .serialize_entry("spans", &SerializableContext(ctx, format_field_marker))?;
-                serializer
                     .serialize_entry("span", &SerializableSpan(span, format_field_marker))
                     .unwrap_or(());
             }
